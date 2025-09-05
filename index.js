@@ -1,50 +1,103 @@
 const express = require("express");
-const fetch = require("node-fetch");
+const cors = require("cors");
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+
 const app = express();
-
 app.use(express.json());
+app.use(cors());
 
-// Render 환경변수에서 Discord 웹훅 URL 읽기
 const WEBHOOK_URL = process.env.DISCORD_WEBHOOK;
 
-// 루트 페이지에서 HTML 제공
+// 루트 페이지에서 HTML 제공 (꾸민 디자인)
 app.get("/", (req, res) => {
   res.send(`
-    <!DOCTYPE html>
-    <html lang="ko">
-    <head>
-      <meta charset="UTF-8">
-      <title>Minecraft 서버 상태 전송</title>
-    </head>
-    <body>
+  <!DOCTYPE html>
+  <html lang="ko">
+  <head>
+    <meta charset="UTF-8">
+    <title>Minecraft 서버 상태 전송</title>
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(to right, #4facfe, #00f2fe);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+      .card {
+        background: white;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        text-align: center;
+        width: 300px;
+      }
+      h1 {
+        color: #333;
+        font-size: 1.5em;
+        margin-bottom: 20px;
+      }
+      input {
+        width: 80%;
+        padding: 10px;
+        border-radius: 10px;
+        border: 1px solid #ccc;
+        margin-bottom: 15px;
+        font-size: 1em;
+      }
+      button {
+        background: #4facfe;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 1em;
+        transition: 0.3s;
+      }
+      button:hover {
+        background: #00f2fe;
+      }
+      #result {
+        margin-top: 15px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
       <h1>Minecraft 서버 상태 전송</h1>
       <input id="server" placeholder="서버 주소 입력" />
+      <br/>
       <button onclick="sendServer()">전송</button>
       <p id="result"></p>
+    </div>
 
-      <script>
-        async function sendServer() {
-          const server = document.getElementById("server").value;
-          if (!server) return alert("서버 주소를 입력하세요.");
+    <script>
+      async function sendServer() {
+        const server = document.getElementById("server").value;
+        if (!server) return alert("서버 주소를 입력하세요.");
 
-          const res = await fetch("/send", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ server })
-          });
+        const res = await fetch("/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ server })
+        });
 
-          const data = await res.json();
-          document.getElementById("result").innerText = data.success
-            ? "웹훅 전송 완료!"
-            : "오류 발생: " + data.error;
-        }
-      </script>
-    </body>
-    </html>
+        const data = await res.json();
+        document.getElementById("result").innerText = data.success
+          ? "웹훅 전송 완료!"
+          : "오류 발생: " + data.error;
+      }
+    </script>
+  </body>
+  </html>
   `);
 });
 
-// POST /send 요청 처리
+// POST /send 요청 처리 (Discord 임베드)
 app.post("/send", async (req, res) => {
   const { server } = req.body;
   if (!server) return res.status(400).send({ success: false, error: "서버 주소 필요" });
@@ -53,21 +106,30 @@ app.post("/send", async (req, res) => {
     const apiUrl = `https://api.mcsrvstat.us/2/${server}`;
     const data = await fetch(apiUrl).then(r => r.json());
 
+    // Discord 임베드 전송
     await fetch(WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        content: `🎮 서버 주소: ${server}\n🌐 상태: ${data.online ? "온라인" : "오프라인"}\n👥 접속자: ${data.players?.online || 0}/${data.players?.max || "?"}`
+        embeds: [{
+          title: `🎮 서버 상태: ${server}`,
+          description: data.online ? "온라인입니다!" : "오프라인입니다!",
+          color: data.online ? 0x00ff00 : 0xff0000,
+          fields: [
+            { name: "접속자", value: `${data.players?.online || 0}/${data.players?.max || "?"}`, inline: true },
+            { name: "MOTD", value: data.motd?.clean?.join("\n") || "없음", inline: false }
+          ],
+          timestamp: new Date()
+        }]
       })
     });
 
     res.send({ success: true });
   } catch (err) {
     console.error(err);
-    res.status(500).send({ success: false, error: "오류 발생" });
+    res.status(500).send({ success: false, error: err.message });
   }
 });
 
-// Render 환경변수 PORT 사용
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
