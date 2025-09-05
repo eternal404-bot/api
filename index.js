@@ -8,7 +8,7 @@ app.use(cors());
 
 const WEBHOOK_URL = process.env.DISCORD_WEBHOOK;
 
-// 루트 페이지 HTML
+// 루트 페이지 HTML (검은색 배경 + 카드 애니메이션)
 app.get("/", (req, res) => {
   res.send(`
   <!DOCTYPE html>
@@ -19,23 +19,34 @@ app.get("/", (req, res) => {
     <style>
       body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(to right, #4facfe, #00f2fe);
+        background-color: #121212;
         display: flex;
         justify-content: center;
         align-items: center;
         height: 100vh;
         margin: 0;
+        overflow: hidden;
       }
+      /* 카드 애니메이션 */
       .card {
-        background: white;
+        background: #1e1e1e;
         padding: 30px;
         border-radius: 20px;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.5);
         text-align: center;
         width: 320px;
+        opacity: 0;
+        transform: translateY(-50px);
+        animation: fadeInUp 1s forwards;
+      }
+      @keyframes fadeInUp {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
       h1 {
-        color: #333;
+        color: #ffffff;
         font-size: 1.5em;
         margin-bottom: 20px;
       }
@@ -43,9 +54,11 @@ app.get("/", (req, res) => {
         width: 80%;
         padding: 10px;
         border-radius: 10px;
-        border: 1px solid #ccc;
+        border: 1px solid #555;
         margin-bottom: 15px;
         font-size: 1em;
+        background-color: #2a2a2a;
+        color: #fff;
       }
       button {
         background: #4facfe;
@@ -55,14 +68,16 @@ app.get("/", (req, res) => {
         border-radius: 10px;
         cursor: pointer;
         font-size: 1em;
-        transition: 0.3s;
+        transition: transform 0.2s, background 0.3s;
       }
       button:hover {
+        transform: scale(1.05);
         background: #00f2fe;
       }
       #result {
         margin-top: 15px;
         font-weight: bold;
+        color: #ffffff;
       }
     </style>
   </head>
@@ -74,6 +89,7 @@ app.get("/", (req, res) => {
       <button onclick="sendServer()">전송</button>
       <p id="result"></p>
     </div>
+
     <script>
       async function sendServer() {
         const server = document.getElementById("server").value;
@@ -88,7 +104,7 @@ app.get("/", (req, res) => {
         const data = await res.json();
         document.getElementById("result").innerText = data.success
           ? "웹훅 전송 완료!"
-          : "error404: " + data.error;
+          : "오류 발생: " + data.error;
       }
     </script>
   </body>
@@ -110,7 +126,7 @@ app.post("/send", async (req, res) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         embeds: [{
-          title: `server: ${server}`,
+          title: `🎮 서버 상태: ${server}`,
           description: data.online ? "온라인입니다!" : "오프라인입니다!",
           color: data.online ? 0x00ff00 : 0xff0000,
           fields: [
