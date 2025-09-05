@@ -8,7 +8,7 @@ app.use(cors());
 
 const WEBHOOK_URL = process.env.DISCORD_WEBHOOK;
 
-// 루트 페이지에서 HTML 제공 (꾸민 디자인)
+// 루트 페이지 HTML
 app.get("/", (req, res) => {
   res.send(`
   <!DOCTYPE html>
@@ -32,7 +32,7 @@ app.get("/", (req, res) => {
         border-radius: 20px;
         box-shadow: 0 8px 20px rgba(0,0,0,0.2);
         text-align: center;
-        width: 300px;
+        width: 320px;
       }
       h1 {
         color: #333;
@@ -74,7 +74,6 @@ app.get("/", (req, res) => {
       <button onclick="sendServer()">전송</button>
       <p id="result"></p>
     </div>
-
     <script>
       async function sendServer() {
         const server = document.getElementById("server").value;
@@ -106,7 +105,6 @@ app.post("/send", async (req, res) => {
     const apiUrl = `https://api.mcsrvstat.us/2/${server}`;
     const data = await fetch(apiUrl).then(r => r.json());
 
-    // Discord 임베드 전송
     await fetch(WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -117,8 +115,13 @@ app.post("/send", async (req, res) => {
           color: data.online ? 0x00ff00 : 0xff0000,
           fields: [
             { name: "접속자", value: `${data.players?.online || 0}/${data.players?.max || "?"}`, inline: true },
-            { name: "MOTD", value: data.motd?.clean?.join("\n") || "없음", inline: false }
+            { name: "버전", value: data.version || "알 수 없음", inline: true },
+            { name: "MOTD", value: data.motd?.clean?.join("\n") || "없음", inline: false },
+            { name: "플레이어 목록", value: data.players?.list?.map(p => p.name).join(", ") || "없음", inline: false },
+            { name: "IP:PORT", value: `${data.ip}:${data.port}`, inline: true },
+            { name: "서버 웹사이트", value: data.website || "없음", inline: false }
           ],
+          thumbnail: { url: `https://api.mcsrvstat.us/icon/${server}` },
           timestamp: new Date()
         }]
       })
