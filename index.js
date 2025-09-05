@@ -88,7 +88,7 @@ app.get("/", (req, res) => {
         const data = await res.json();
         document.getElementById("result").innerText = data.success
           ? "웹훅 전송 완료!"
-          : "오류 발생: " + data.error;
+          : "error404: " + data.error;
       }
     </script>
   </body>
@@ -110,7 +110,7 @@ app.post("/send", async (req, res) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         embeds: [{
-          title: `🎮 서버 상태: ${server}`,
+          title: `server: ${server}`,
           description: data.online ? "온라인입니다!" : "오프라인입니다!",
           color: data.online ? 0x00ff00 : 0xff0000,
           fields: [
