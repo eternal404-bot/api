@@ -126,8 +126,8 @@ app.post("/send", async (req, res) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         embeds: [{
-          title: `🎮 서버 상태: ${server}`,
-          description: data.online ? "온라인입니다!" : "오프라인입니다!",
+          title: `server: ${server}`,
+          description: data.online ? "online" : "offline",
           color: data.online ? 0x00ff00 : 0xff0000,
           fields: [
             { name: "접속자", value: `${data.players?.online || 0}/${data.players?.max || "?"}`, inline: true },
