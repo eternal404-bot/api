@@ -15,7 +15,7 @@ app.get("/", (req, res) => {
   <html lang="ko">
   <head>
     <meta charset="UTF-8">
-    <title>Minecraft 서버 상태 전송</title>
+    <title>Minecraft server</title>
     <style>
       body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -83,10 +83,10 @@ app.get("/", (req, res) => {
   </head>
   <body>
     <div class="card">
-      <h1>Minecraft 서버 상태 전송</h1>
+      <h1>Minecraft server</h1>
       <input id="server" placeholder="서버 주소 입력" />
       <br/>
-      <button onclick="sendServer()">전송</button>
+      <button onclick="sendServer()">go</button>
       <p id="result"></p>
     </div>
 
@@ -103,8 +103,8 @@ app.get("/", (req, res) => {
 
         const data = await res.json();
         document.getElementById("result").innerText = data.success
-          ? "웹훅 전송 완료!"
-          : "오류 발생: " + data.error;
+          ? "Success!"
+          : "error: " + data.error;
       }
     </script>
   </body>
