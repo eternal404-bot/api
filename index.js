@@ -1,13 +1,19 @@
+// index.js
+import express from "express";
+import cors from "cors";
 
-const express = require("express");
-const cors = require("cors");
-const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-const WEBHOOK_URL = process.env.DISCORD_WEBHOOK;
+// 환경 변수 이름 확인
+const WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+if (!WEBHOOK_URL) {
+  console.error("❌ DISCORD_WEBHOOK_URL 환경 변수가 설정되지 않았습니다.");
+  process.exit(1);
+}
 
 // 루트 페이지 HTML (검은색 배경 + 카드 애니메이션)
 app.get("/", (req, res) => {
@@ -16,7 +22,7 @@ app.get("/", (req, res) => {
   <html lang="ko">
   <head>
     <meta charset="UTF-8">
-    <title>Minecraft server</title>
+    <title>Minecraft 서버 상태 전송</title>
     <style>
       body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -28,7 +34,6 @@ app.get("/", (req, res) => {
         margin: 0;
         overflow: hidden;
       }
-      /* 카드 애니메이션 */
       .card {
         background: #1e1e1e;
         padding: 30px;
@@ -41,16 +46,9 @@ app.get("/", (req, res) => {
         animation: fadeInUp 1s forwards;
       }
       @keyframes fadeInUp {
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
+        to { opacity: 1; transform: translateY(0); }
       }
-      h1 {
-        color: #ffffff;
-        font-size: 1.5em;
-        margin-bottom: 20px;
-      }
+      h1 { color: #ffffff; font-size: 1.5em; margin-bottom: 20px; }
       input {
         width: 80%;
         padding: 10px;
@@ -71,20 +69,13 @@ app.get("/", (req, res) => {
         font-size: 1em;
         transition: transform 0.2s, background 0.3s;
       }
-      button:hover {
-        transform: scale(1.05);
-        background: #00f2fe;
-      }
-      #result {
-        margin-top: 15px;
-        font-weight: bold;
-        color: #ffffff;
-      }
+      button:hover { transform: scale(1.05); background: #00f2fe; }
+      #result { margin-top: 15px; font-weight: bold; color: #ffffff; }
     </style>
   </head>
   <body>
     <div class="card">
-      <h1>Minecraft server stat</h1>
+      <h1>Minecraft server</h1>
       <input id="server" placeholder="server address" />
       <br/>
       <button onclick="sendServer()">Go</button>
@@ -96,16 +87,20 @@ app.get("/", (req, res) => {
         const server = document.getElementById("server").value;
         if (!server) return alert("server address");
 
-        const res = await fetch("/send", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ server })
-        });
+        try {
+          const res = await fetch("/send", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ server })
+          });
 
-        const data = await res.json();
-        document.getElementById("result").innerText = data.success
-          ? "success!"
-          : "error: " + data.error;
+          const data = await res.json();
+          document.getElementById("result").innerText = data.success
+            ? "Success"
+            : "error: " + data.error;
+        } catch (err) {
+          document.getElementById("result").innerText = "error: " + err.message;
+        }
       }
     </script>
   </body>
@@ -127,7 +122,7 @@ app.post("/send", async (req, res) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         embeds: [{
-          title: `server: ${server}`,
+          title: `server stat: ${server}`,
           description: data.online ? "online" : "offline",
           color: data.online ? 0x00ff00 : 0xff0000,
           fields: [
