@@ -16,7 +16,7 @@ app.get("/", (req, res) => {
   <html lang="ko">
   <head>
     <meta charset="UTF-8">
-    <title>Minecraft 서버 상태 전송</title>
+    <title>Minecraft server</title>
     <style>
       body {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -84,17 +84,17 @@ app.get("/", (req, res) => {
   </head>
   <body>
     <div class="card">
-      <h1>Minecraft 서버 상태 전송</h1>
-      <input id="server" placeholder="서버 주소 입력" />
+      <h1>Minecraft server stat</h1>
+      <input id="server" placeholder="server address" />
       <br/>
-      <button onclick="sendServer()">전송</button>
+      <button onclick="sendServer()">Go</button>
       <p id="result"></p>
     </div>
 
     <script>
       async function sendServer() {
         const server = document.getElementById("server").value;
-        if (!server) return alert("서버 주소를 입력하세요.");
+        if (!server) return alert("server address");
 
         const res = await fetch("/send", {
           method: "POST",
@@ -104,8 +104,8 @@ app.get("/", (req, res) => {
 
         const data = await res.json();
         document.getElementById("result").innerText = data.success
-          ? "웹훅 전송 완료!"
-          : "오류 발생: " + data.error;
+          ? "success!"
+          : "error: " + data.error;
       }
     </script>
   </body>
@@ -127,8 +127,8 @@ app.post("/send", async (req, res) => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         embeds: [{
-          title: `🎮 서버 상태: ${server}`,
-          description: data.online ? "온라인입니다!" : "오프라인입니다!",
+          title: `server: ${server}`,
+          description: data.online ? "online" : "offline",
           color: data.online ? 0x00ff00 : 0xff0000,
           fields: [
             { name: "접속자", value: `${data.players?.online || 0}/${data.players?.max || "?"}`, inline: true },
