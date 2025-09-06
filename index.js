@@ -11,6 +11,12 @@ app.use(bodyParser.json());
 const PORT = process.env.PORT || 3000;
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
 
+// 환경 변수 확인
+if (!DISCORD_WEBHOOK_URL) {
+  console.error("❌ DISCORD_WEBHOOK_URL 환경 변수가 설정되지 않았습니다.");
+  process.exit(1);
+}
+
 // 1️⃣ Minecraft 서버 상태 확인
 app.post("/mcstatus", async (req, res) => {
   const { address } = req.body;
@@ -20,7 +26,7 @@ app.post("/mcstatus", async (req, res) => {
     const response = await fetch(`https://api.mcsrvstat.us/2/${address}`);
     const data = await response.json();
 
-    if (!data.online) return res.status(404).json({ error: "서버가 꺼져 있거나 찾을 수 없습니다." });
+    if (!data || !data.online) return res.status(404).json({ error: "서버가 꺼져 있거나 찾을 수 없습니다." });
 
     const embed = {
       embeds: [{
@@ -42,10 +48,10 @@ app.post("/mcstatus", async (req, res) => {
       body: JSON.stringify(embed)
     });
 
-    res.json({ success: true, message: "Minecraft 서버 상태가 Discord로 전송됨" });
+    res.json({ success: true, message: "success" });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Minecraft 상태 확인 오류" });
+    console.error("error:", err.message);
+    res.status(500).json({ error: "error" });
   }
 });
 
@@ -54,13 +60,21 @@ app.post("/whois", async (req, res) => {
   const { target } = req.body;
   if (!target) return res.status(400).json({ error: "도메인 또는 IP를 입력하세요." });
 
+  const apiUrl = `https://who-dat.as93.net/${target}`;
   try {
-    const response = await fetch(`https://who-dat.as93.net/${target}`);
-    const data = await response.json();
+    const response = await fetch(apiUrl);
+    const text = await response.text();
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      return res.status(500).json({ error: "WHOIS API에서 유효하지 않은 응답이 반환되었습니다." });
+    }
 
     const embed = {
       embeds: [{
-        title: `🔍 WHOIS 조회: ${target}`,
+        title: `domain: ${target}`,
         color: 0x3498db,
         fields: [
           { name: "도메인", value: data.domain || target, inline: true },
@@ -79,14 +93,14 @@ app.post("/whois", async (req, res) => {
       body: JSON.stringify(embed)
     });
 
-    res.json({ success: true, message: "WHOIS 분석 결과가 Discord로 전송됨" });
+    res.json({ success: true, message: "success" });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "WHOIS 분석 오류" });
+    console.error("error:", err.message);
+    res.status(500).json({ error: "error" });
   }
 });
 
-// 3️⃣ 기본 페이지 - 버튼 UI
+// 3️⃣ 버튼 UI 페이지
 app.get("/", (req, res) => {
   res.send(`
     <html>
@@ -105,16 +119,16 @@ app.get("/", (req, res) => {
         <h1>⚡ API 선택 실행기</h1>
 
         <div class="card">
-          <h2>🟢 Minecraft 서버 상태</h2>
+          <h2>minecraft server</h2>
           <input id="mcAddress" placeholder="예: play.hypixel.net"/>
-          <button onclick="mcStatus()">Minecraft 확인</button>
+          <button onclick="mcStatus()">Go!</button>
           <p id="mcResult"></p>
         </div>
 
         <div class="card">
-          <h2>🔍 WHOIS 조회 (Who-Data)</h2>
+          <h2>domain</h2>
           <input id="domainTarget" placeholder="예: example.com"/>
-          <button onclick="whoisCheck()">WHOIS 분석</button>
+          <button onclick="whoisCheck()">go!</button>
           <p id="whoisResult"></p>
         </div>
 
